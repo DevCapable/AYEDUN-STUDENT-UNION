@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MissAyedunApplication;
 use App\Models\UserAccount;
+use App\Modules\MissAyedun\Models\MissAyedun;
+use App\Modules\MissAyedun\Repo\Eloquent\MissAsuApplicationRepository;
+use App\Modules\MissAyedun\Repo\MissAsuApplicationRepositoryInterface;
+
+use App\Modules\Vote\Models\Vote;
+use App\Repository\UserRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-
+use Symfony\Component\Console\Input\Input;
 use App\Models\Post;
 use Illuminate\Support\Facades\DB;
 use App\Models\Like;
@@ -24,60 +31,61 @@ use App\Models\AdminPost;
 use App\Models\Message;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\View;
+
+
 //use Illuminate\Support\Facades\DB;
 
-class UserController extends Controller
+
+class UserController extends BaseController
 {
+
+    private $MissAssuAppRepository;
+    private $userRepository;
+
+    public function __construct(MissAsuApplicationRepositoryInterface $MissAssuAppRepository, UserRepositoryInterface $userRepository)
+    {
+
+        $this->MissAssuAppRepository = $MissAssuAppRepository;
+        $this->userRepository = $userRepository;
+
+    }
+
     public function register(Request $request)
     {
-        # validation rules
-        $rules = [
-            'ID_NUMBER' => 'required|',
-            'fullname' => 'required|',
-            'username' => 'required|unique:user_accounts',
-            'email' => 'required|email|unique:user_accounts',
-            'date_of_birth' => 'required|',
-            'compound' => 'required|',
-            'institution' => 'required|',
-            'place_of_residence' => 'required|',
-            'marital_status' => 'required|',
-            'security_question' => 'required|',
-            'answers' => 'required|',
-            'phone' => 'required|',
-            'gender' => 'required|',
-            'password' => 'required|min:8',
-        ];
-        # validator
-        $validator = Validator::make($request->all(), $rules);
+//        # validation rules
+//        $rules = [
+//            'ID_NUMBER' => 'required|',
+//            'fullname' => 'required|',
+//            'username' => 'required|unique:user_accounts',
+//            'email' => 'required|email|unique:user_accounts',
+//            'date_of_birth' => 'required|',
+//            'compound' => 'required|',
+//            'institution' => 'required|',
+//            'place_of_residence' => 'required|',
+//            'marital_status' => 'required|',
+//            'security_question' => 'required|',
+//            'answers' => 'required|',
+//            'phone' => 'required|',
+//            'gender' => 'required|',
+//            'password' => 'required|min:8',
+//        ];
+//        # validator
+        $validator = Validator::make($request->all(), $this->getValidateRules($request));
         if ($validator->fails()) {
             return redirect()->back()->withInput()->withErrors($validator);
         } else {
-            # collate data
-            $ID_NUMBER = $request->ID_NUMBER;
-            $fullname = $request->fullname;
-            $username = $request->username;
-            $email = $request->email;
-            $date_of_birth = $request->date_of_birth;
-            $compound = $request->compound;
-            $institution = $request->institution;
-            $place_of_residence = $request->place_of_residence;
-            $marital_status = $request->marital_status;
-            $security_question = $request->security_question;
-            $answers = $request->answers;
-            $phone = $request->phone;
-            $gender = $request->gender;
-            $password = Hash::make($request->password);
-
+           $data = $this->getValidData($request);
+//                dd($this->data);
             # verify if user email exist
-            $verifyUserEmail = UserAccount::where('email', $email)->first();
-
+            $verifyUserEmail = UserAccount::where('email', $this->getValidData(['email']))->first();
+//            dd($verifyUserEmail);
             if ($verifyUserEmail) {
                 $error = Session::flash('error', 'Email already taken.');
                 return redirect()->back()->withInput()->with($error);
             } else {
 
                 # verify if username exist
-                $verifyUsername = UserAccount::where('username', $username)->first();
+                $verifyUsername = UserAccount::where('username', $this->getValidData(['username']))->first();
 
                 if ($verifyUsername) {
                     $error = Session::flash('error', 'Username already taken.');
@@ -85,30 +93,23 @@ class UserController extends Controller
                 } else {
 
                     try {
-                        # create user data
-                        UserAccount::create([
-                            'id_number' => $ID_NUMBER,
-                            'fullname' => $fullname,
-                            'email' => $email,
-                            'username' => $username,
-                            'date_of_birth' => $date_of_birth,
-                            'compound' => $compound,
-                            'institution' => $institution,
-                            'place_of_residence' => $place_of_residence,
-                            'marital_status' => $marital_status,
-                            'security_question' => $security_question,
-                            'answers' => $answers,
-                            'phone' => $phone,
-                            'gender' => $gender,
-                            'password' => $password
-                        ]);
-
-
+//
+//                    $data = $request->all();
+//                        dd($this->data);
+                      $cre = $this->userRepository->create($data);
+                     if ($cre){
+                         dd('YESSS');
+                         $notification = array(
+                             'message' => 'Registration completed successfully.!',
+                             'alert-type' => 'success'
+                         );  return redirect()->back()->with($notification);
+                     }
                         $notification = array(
-                            'message' => 'Registration completed successfully.!',
-                            'alert-type' => 'success'
+                            'message' => 'Registration Failed!',
+                            'alert-type' => 'error'
                         );
-                        return redirect()->back()->with($notification);
+                        return redirect()->back()->withInput()->withErrors($notification);
+
                     } catch (\Exception $ex) {
                         dd($ex);
                         $notification = array(
@@ -122,6 +123,34 @@ class UserController extends Controller
         }
     }
 
+//    public function register(Request $request)
+//    {
+//                    try {
+//
+//                        $data = $request->all();
+////                        dd($data);
+//                        $cre = $this->userRepository->create($data);
+//                        if ($cre){
+//                            $notification = array(
+//                                'message' => 'Registration completed successfully.!',
+//                                'alert-type' => 'success'
+//                            );  return redirect()->back()->with($notification);
+//                        }
+//                        $notification = array(
+//                            'message' => 'Registration Failed!',
+//                            'alert-type' => 'error'
+//                        );
+//                        return redirect()->back()->withInput()->withErrors($notification);
+//
+//                    } catch (\Exception $ex) {
+//                        dd($ex);
+//                        $notification = array(
+//                            'message' => 'Registration Failed!',
+//                            'alert-type' => 'error'
+//                        );
+//                        return redirect()->back()->withInput()->withErrors($notification);
+//                    }
+//                }
     // reg as Stake holder
     public function registerAsStakeHolder(Request $request)
     {
@@ -358,6 +387,7 @@ class UserController extends Controller
 
         ]);
     }
+
     public function get_compond_name_in_regStakeHolder_page()
     {
         $getCompound = Compound::all();
@@ -373,24 +403,30 @@ class UserController extends Controller
         try {
 
             # logged in user
-            $loggedInUser = $request->session()->get('user');
-            $user = UserAccount::where('email', $loggedInUser)->first();
-            if ($user) {
+
+            if ($this->getAuth($request)) {
                 #set all the comment accordingly
                 $All_post = Post::with('likes')->orderBy('id', 'DESC')->paginate(4);
                 $comments = Comment::get();
-               // get total of who comment per post
+                // get total of who comment per post
                 $whoComment = Comment::get();
-               // dd($whoComment);
-               // $total = Comment::count();
+                // dd($whoComment);
+                // $total = Comment::count();
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                $users = $this->userRepository->getModel();
+                $user_id =$this->currentUser($request)->id_number;
+                $MissAsuApp = $this->MissAssuAppRepository->findByUserId($user_id);
+//          if ($MissAsuApp){
+//
+//          }
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('home')->with([
-                    'user' => $user,
-                    'whoComment'=>$whoComment,
+                    'user' => $this->currentUser($request),
+                    'whoComment' => $whoComment,
                     'All_post' => $All_post,
-                    'comments'  => $comments,
+                    'comments' => $comments,
                     'unreadMessage' => $unreadMessage,
+                    'MissAsuApp' => $MissAsuApp
 
                 ]);
             } else {
@@ -399,19 +435,23 @@ class UserController extends Controller
         } catch (\Exception $ex) {
             return redirect()->back();
         }
-    }
 
+    }
+//    public function home(Request $request){
+//        $users = $this->userRepository->all();
+//
+//        return view('users.index', [
+//            'users' => $users
+//        ]);
+//    }
     public function imageUploadPage(Request $request)
     {
         try {
 
             # logged in user
-            $loggedInUser = $request->session()->get('user');
-            # get user data
-            $user = UserAccount::where('email', $loggedInUser)->first();
-            if ($user) {
+            if ($this->getAuth($request)) {
                 return view::make('imageUpload')->with([
-                    'user' => $user
+                    'user' => $this->currentUser($request)
                 ]);
             } else {
                 return redirect()->to('/');
@@ -438,29 +478,29 @@ class UserController extends Controller
         if ($verifyUsername) {
             try {
                 # create user data
-                 $ToDelete = UserAccount::find($verifyUsername->id);
-                 if ($ToDelete){
-                      UserAccount::find($verifyUsername->id)->update([
-                    'picture' => 'public/images/' . $imageName
-                ]);
-                 if (!empty($ToDelete->picture)) {
-                    unlink($ToDelete->picture);
+                $ToDelete = UserAccount::find($verifyUsername->id);
+                if ($ToDelete) {
+                    UserAccount::find($verifyUsername->id)->update([
+                        'picture' => 'public/images/' . $imageName
+                    ]);
+                    if (!empty($ToDelete->picture)) {
+                        unlink($ToDelete->picture);
+                    }
+                    $notification = array(
+                        'message' => 'Uploaded successfully!',
+                        'alert-type' => 'success'
+                    );
+                    return redirect()->back()->with($notification);
+                } else {
+                    UserAccount::find($verifyUsername->id)->update([
+                        'picture' => 'public/images/' . $imageName
+                    ]);
+                    $notification = array(
+                        'message' => 'Uploaded successfully!',
+                        'alert-type' => 'success'
+                    );
+                    return redirect()->back()->with($notification);
                 }
-                 $notification = array(
-                    'message' => 'Uploaded successfully!',
-                    'alert-type' => 'success'
-                );
-                return redirect()->back()->with($notification);
-                 }else{
-                      UserAccount::find($verifyUsername->id)->update([
-                    'picture' => 'public/images/' . $imageName
-                ]);
-                 $notification = array(
-                    'message' => 'Uploaded successfully!',
-                    'alert-type' => 'success'
-                );
-                return redirect()->back()->with($notification);
-                 }
 
 
             } catch (\Exception $ex) {
@@ -479,10 +519,9 @@ class UserController extends Controller
     public function posting(Request $request)
     {
         # logged in user
-        $loggedInUser = $request->session()->get('user');
-        if ($loggedInUser) {
+        if ($this->getAuth($request)) {
             # get user data
-            $user = UserAccount::where('email', $loggedInUser)->first();
+            $user = UserAccount::where('email', $this->currentUser($request))->first();
             $userId = $user->id;
             $username = $user->username;
             # validation rules
@@ -514,8 +553,7 @@ class UserController extends Controller
                         'alert-type' => 'error'
                     );
                     return redirect()->back()->withInput()->withErrors($notification);
-                    $error = Session::flash('error', 'Error Can not create this post.', $ex->getMessage());
-                    return redirect()->back()->withInput()->withErrors($error);
+
                 }
             }
         } else {
@@ -530,12 +568,10 @@ class UserController extends Controller
     public function UploadImagePost(Request $request)
     {
         # logged in user
-        $loggedInUser = $request->session()->get('user');
-        # get user data
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
-            $userId = $user->id;
-            $username = $user->username;
+
+        if ($this->getAuth($request)) {
+            $userId = $this->currentUser($request)->id;
+            $username = $this->currentUser($request)->username;
             # validation rules
             $rules = [
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -570,8 +606,6 @@ class UserController extends Controller
                         'alert-type' => 'error'
                     );
                     return redirect()->back()->withInput()->withErrors($notification);
-                    $error = Session::flash('error', 'Error Cant create this post.');
-                    return redirect()->back()->withInput()->with($error);
                 }
             }
         } else {
@@ -582,16 +616,13 @@ class UserController extends Controller
     public function UploadVideo(Request $request)
     {
         # logged in user
-        $loggedInUser = $request->session()->get('user');
-        //  get user account
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
-            $UserId = $user->id;
-            $UserName = $user->username;
+        if ($this->getAuth($request)) {
+            $userId = $this->currentUser($request)->id;
+            $username = $this->currentUser($request)->username;
             // validation rules
             $rules = [
 
-                'video'          => 'mimes:mpeg,ogg,mp4,webm,jpeg,jpg,3gp,mov,flv,avi,wmv,ts|max:100040|required',
+                'video' => 'mimes:mpeg,ogg,mp4,webm,jpeg,jpg,3gp,mov,flv,avi,wmv,ts|max:100040|required',
                 'VideoCaption' => 'required|max:2000'
             ];
             # validator
@@ -604,8 +635,8 @@ class UserController extends Controller
                 $VideoCaption = $request->VideoCaption;
                 try {
                     Post::create([
-                        'userId' => $UserId,
-                        'username' => $UserName,
+                        'userId' => $userId,
+                        'username' => $username,
                         'VideoCaption' => $VideoCaption,
                         'video' => 'public/VideoPost/' . $VideoName
                     ]);
@@ -628,43 +659,38 @@ class UserController extends Controller
 
     public function userPage(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        # get user data
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 // to search for a user
                 $userRequest = $request->question;
                 if ($userRequest == '') {
                     $users = UserAccount::orderBy('fullname', 'ASC')->paginate(4);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('all_users')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'users' => $users,
                         'unreadMessage' => $unreadMessage,
                     ]);
                 } elseif ($userRequest) {
-                    $user = UserAccount::where('email', $loggedInUser)->first();
                     $SearchResult = UserAccount::where('username', 'Like', '%' . $userRequest . '%');
                     $users = $SearchResult->orderBy('id', 'DESC')->paginate(10);
                     // searching logic ends here
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('all_users')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'users' => $users,
                         'unreadMessage' => $unreadMessage,
 
                     ]);
                 } else {
                     $users = UserAccount::orderBy('fullname', 'ASC')->paginate(4);
-                    # get user data
-                    $user = UserAccount::where('email', $loggedInUser)->first();
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('all_users')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'users' => $users,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -679,16 +705,15 @@ class UserController extends Controller
 
     public function Edit_user_page(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 #get user data here
                 #$userId_to_edit = $id;
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('Edit_profile')->with([
-                    'user' => $user,
+                    'user' => $this->currentUser($request),
                     'unreadMessage' => $unreadMessage,
                 ]);
             } catch (\Exception $ex) {
@@ -741,15 +766,14 @@ class UserController extends Controller
             $phone = $request->phone;
             $gender = $request->gender;
             # verify if user email exist
-            $user = $request->session()->get('user');
-            $verifyUsername = UserAccount::where('email', $user)->first();
 
-            if ($verifyUsername) {
+
+            if ($this->getAuth($request)) {
                 try {
                     # Now final stage since it has passed all test and conditions
                     # we update now
                     # create user data
-                    UserAccount::find($verifyUsername->id)->update([
+                    UserAccount::find($this->currentUser($request)->id)->update([
                         'fullname' => $fullname,
                         'date_of_birth' => $date_of_birth,
                         'compound' => $compound,
@@ -782,24 +806,22 @@ class UserController extends Controller
 
     public function view_user_profile(Request $request, $id)
     {
-        $loggedInUser = $request->Session()->get('user');
-        #set all the comment accordingly
-        $current_user = UserAccount::where('email', $loggedInUser)->first();
-        if ($current_user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $UserId = $id;
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $current_user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 $user = UserAccount::where('id', $UserId)->first();
                 $All_post = Post::orderBy('id', 'DESC',)->where(['userId' => $user->id])->paginate(4);
-                  // get total of who comment per post
+                // get total of who comment per post
                 $whoComment = Comment::get();
                 return view::make('view_user_profile')->with([
-                    'user' => $current_user,
+                    'user' => $this->currentUser($request),
                     'UserId' => $user,
                     'All_post' => $All_post,
                     'unreadMessage' => $unreadMessage,
-                     'whoComment'=>$whoComment,
+                    'whoComment' => $whoComment,
                 ]);
             } catch (\Exception $ex) {
                 $notification = array(
@@ -819,14 +841,12 @@ class UserController extends Controller
 
     public function delete_my_post(Request $request, $id)
     {
-        $loggedInUser = $request->session()->get('user');
-        #get user data here
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $postId = $id;
                 # check for the poster
-                $checkPOST = Post::where('id', $postId)->where('userId', $user->id)->first();
+                $checkPOST = Post::where('id', $postId)->where('userId', $this->currentUser($request)->id)->first();
                 #dd($checkPOST);
                 if ($checkPOST) {
                     try {
@@ -865,27 +885,26 @@ class UserController extends Controller
             return redirect()->back();
         }
     }
+
     public function logout(Request $request)
     {
 
-            $request->session()->forget('user');
-            $request->session()->regenerate();
-            return redirect()->to('/login');
+        $request->session()->forget('user');
+        $request->session()->regenerate();
+        return redirect()->to('/login');
     }
 
     public function likeOrUnlikePost(Request $request, $postId)
     {
         try {
             # logged in user
-            $loggedInUser = $request->session()->get('user');
-            // get user data
-            $user = UserAccount::where('email', $loggedInUser)->first();
-            if ($user) {
+
+            if ($this->getAuth($request)) {
                 // check
-                $checkIfUserAlreadyLikePost = Like::where('post_id', $postId)->where('user_id', $user->id)->first();
+                $checkIfUserAlreadyLikePost = Like::where('post_id', $postId)->where('user_id', $this->currentUser($request)->id)->first();
                 if ($checkIfUserAlreadyLikePost) {
                     // Delete
-                    $isDelete = Like::where('post_id', $postId)->where('user_id', $user->id)->first();
+                    $isDelete = Like::where('post_id', $postId)->where('user_id', $this->currentUser($request)->id)->first();
                     if ($isDelete) {
                         $isDelete->delete();
                         $notification = array(
@@ -900,7 +919,7 @@ class UserController extends Controller
                     // Like post
                     Like::create([
                         'post_id' => $postId,
-                        'user_id' => $user->id
+                        'user_id' => $this->currentUser($request)->id
                     ]);
 
                     $notification = array(
@@ -919,19 +938,17 @@ class UserController extends Controller
 
     public function ViewAllSportDirector(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        #get Admin data
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $userRequest = $request->question;
                 if ($userRequest == '') {
                     #get sports data
                     $sportDetails = Sports::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllSportDirector')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'sportDetails' => $sportDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -939,7 +956,7 @@ class UserController extends Controller
                     $SearchResult = Sports::where('full_name', 'Like', '%' . $userRequest . '%');
                     // searching logic ends here
                     #get sports data
-                    $sportDetails =  $SearchResult->orderBy('id', 'DESC')->paginate(10);
+                    $sportDetails = $SearchResult->orderBy('id', 'DESC')->paginate(10);
                     $notification = array(
                         'message' => 'This are likely results for your search?!',
                         'alert-type' => 'info'
@@ -956,9 +973,9 @@ class UserController extends Controller
                     #get sports data
                     $sportDetails = Sports::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $loggedInUser->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllSportDirector')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'sportDetails' => $sportDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -975,20 +992,18 @@ class UserController extends Controller
 
     public function ViewAllNationalPresident(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        #get Admin data
-        $user = UserAccount::where('email', $loggedInUser)->first();
+
         $userRequest = $request->question;
         // dd($loggedInUser);
-        if ($user) {
+        if ($this->getAuth($request)) {
             try {
                 if ($userRequest == '') {
                     #get sports data
                     $NationalPresidentDetails = NationalPresident::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('ViewAllNationalPresident')->with([
-                        'verifyUser' => $user,
+                        'verifyUser' => $this->currentUser($request),
                         'NationalPresidentDetails' => $NationalPresidentDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -997,9 +1012,9 @@ class UserController extends Controller
                     $SearchResult = NationalPresident::where('full_name', 'Like', '%' . $userRequest . '%');
                     // searching logic ends here
                     #get sports data
-                    $NationalPresidentDetails =  $SearchResult->orderBy('id', 'DESC')->paginate(10);
+                    $NationalPresidentDetails = $SearchResult->orderBy('id', 'DESC')->paginate(10);
                     #get Admin data
-                    $user = UserAccount::where('username', $user)->first();
+                    $user = UserAccount::where('username', $this->currentUser($request))->first();
                     //get new messages
                     $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
                     return view::make('/ViewAllNationalPresident')->with([
@@ -1013,9 +1028,9 @@ class UserController extends Controller
                     #get Admin data
 
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllNationalPresident')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'NationalPresidentDetails' => $NationalPresidentDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -1032,19 +1047,17 @@ class UserController extends Controller
 
     public function ViewAllChapterPresident(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        #get user data with email
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             $userRequest = $request->question;
             try {
                 if ($userRequest == '') {
                     #get sports data
                     $ViewAllChapterPresidentDetails = ChapterPresident::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllChapterPresident')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'ViewAllChapterPresidentDetails' => $ViewAllChapterPresidentDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -1053,11 +1066,11 @@ class UserController extends Controller
                     $SearchResult = ChapterPresident::where('full_name', 'Like', '%' . $userRequest . '%');
                     // searching logic ends here
                     #get sports data
-                    $ViewAllChapterPresidentDetails =  $SearchResult->orderBy('id', 'DESC')->paginate(10);
+                    $ViewAllChapterPresidentDetails = $SearchResult->orderBy('id', 'DESC')->paginate(10);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllChapterPresident')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'ViewAllChapterPresidentDetails' => $ViewAllChapterPresidentDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -1065,9 +1078,9 @@ class UserController extends Controller
                     #get sports data
                     $ViewAllChapterPresidentDetails = ChapterPresident::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllChapterPresident')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'ViewAllChapterPresidentDetails' => $ViewAllChapterPresidentDetails,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -1084,17 +1097,15 @@ class UserController extends Controller
 
     public function ViewAllCompound(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        #get user data
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 #get compound data
                 $compounds = Compound::orderBy('Name_of_Compound', 'desc')->paginate(8);
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('/ViewAllCompound')->with([
-                    'user' => $user,
+                    'user' => $this->currentUser($request),
                     'compounds' => $compounds,
                     'unreadMessage' => $unreadMessage,
                 ]);
@@ -1117,13 +1128,12 @@ class UserController extends Controller
 
     public function ViewCompoundHistory(Request $request, $id)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
                 $compound = Compound::where('id', $id)->first();
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('/ViewCompoundHistory')->with([
                     'compound' => $compound,
                     'unreadMessage' => $unreadMessage,
@@ -1143,6 +1153,7 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
     public function ViewAllRelative(Request $request)
     {
         /**
@@ -1152,15 +1163,14 @@ class UserController extends Controller
         // 2. pascal case => $VerifyUser
         // 3. camel case => $verifyUser
         try {
-            $loggedInUser = $request->session()->get('user');
-            $VerifyUser = UserAccount::where('email', $loggedInUser)->first();
-            if ($VerifyUser) {
+
+            if ($this->getAuth($request)) {
                 //check relative existence
-                $relatives = UserAccount::where('compound', $VerifyUser->compound)->paginate(8);
+                $relatives = UserAccount::where('compound', $this->currentUser($request)->compound)->paginate(8);
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $VerifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('ViewAllRelative')->with([
-                    'user' => $VerifyUser,
+                    'user' => $this->currentUser($request),
                     'relatives' => $relatives,
                     'unreadMessage' => $unreadMessage,
                 ]);
@@ -1213,6 +1223,7 @@ class UserController extends Controller
             }
         }
     }
+
     public function executive(Request $request)
     {
         $AdminPosts = AdminPost::orderBy('id', 'DESC')->paginate(3);
@@ -1228,20 +1239,18 @@ class UserController extends Controller
     public function ViewAllNationalExecutive(Request $request)
     {
         // get session details
-        $loggedInUser = $request->session()->get('user');
-        // verify user and authenticate
-        $user = UserAccount::where('email', $loggedInUser)->first();
 
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $userRequest = $request->question;
                 if ($userRequest == '') {
                     #get sports data
                     $NationalExecutives = NationalExecutive::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewNationalExecutive')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'NationalExecutives' => $NationalExecutives,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -1249,18 +1258,18 @@ class UserController extends Controller
                     $SearchResult = NationalExecutive::where('full_name', 'Like', '%' . $userRequest . '%');
                     // searching logic ends here
                     #get sports data
-                    $NationalExecutives =  $SearchResult->orderBy('id', 'DESC')->paginate(10);
+                    $NationalExecutives = $SearchResult->orderBy('id', 'DESC')->paginate(10);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewNationalExecutive')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'NationalExecutives' => $NationalExecutives,
                         'unreadMessage' => $unreadMessage,
                     ]);
                 } else {
                     $NationalExecutives = NationalExecutive::orderBy('full_name', 'asc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewNationalExecutive')->with([
                         'NationalExecutives' => $NationalExecutives,
                         'user', $user,
@@ -1288,19 +1297,17 @@ class UserController extends Controller
     {
 
         // get session details
-        $loggedInUser = $request->session()->get('user');
-        // verify user and authenticate
-        $user = UserAccount::where('email', $loggedInUser)->first();
-        if ($user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $userRequest = $request->question;
                 if ($userRequest == '') {
                     #get MISS ASU data
                     $ViewAllMissAsus = MissAsu::orderBy('full_name', 'desc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllMissAsu')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'ViewAllMissAsus' => $ViewAllMissAsus,
                         'unreadMessage' => $unreadMessage,
                     ]);
@@ -1308,21 +1315,21 @@ class UserController extends Controller
                     $SearchResult = MissAsu::where('full_name', 'Like', '%' . $userRequest . '%');
                     // searching logic ends here
                     #get MISS ASU data
-                    $ViewAllMissAsus =  $SearchResult->orderBy('id', 'DESC')->paginate(10);
+                    $ViewAllMissAsus = $SearchResult->orderBy('id', 'DESC')->paginate(10);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllMissAsu')->with([
-                        'user' => $user,
+                        'user' => $this->currentUser($request),
                         'ViewAllMissAsus' => $ViewAllMissAsus,
                         'unreadMessage' => $unreadMessage,
                     ]);
                 } else {
                     $ViewAllMissAsus = MissAsu::orderBy('full_name', 'asc')->paginate(8);
                     //get new messages
-                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $user->username)->count();
+                    $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                     return view::make('/ViewAllMissAsu')->with([
                         'ViewAllMissAsus' => $ViewAllMissAsus,
-                        'user', $user,
+                        'user', $this->currentUser($request),
                         'unreadMessage' => $unreadMessage,
 
                     ]);
@@ -1334,17 +1341,16 @@ class UserController extends Controller
 
     public function ViewNationalExecutiveProfile(Request $request, $id)
     {
-        $loggedInUser = $request->Session()->get('user');
-        $current_user = UserAccount::where('email', $loggedInUser)->first();
-        if ($current_user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $UserId = $id;
                 $user = NationalExecutive::where('id', $UserId)->first();
                 // $All_post = Post::orderBy('id', 'DESC',)->where(['userId' => $user->id])->paginate(4);
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $current_user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('/ViewNationalExecutiveProfile')->with([
-                    'user' => $current_user,
+                    'user' => $this->currentUser($request),
                     'UserId' => $user,
                     'unreadMessage' => $unreadMessage,
 
@@ -1368,18 +1374,16 @@ class UserController extends Controller
 
     public function ViewNationalPresidentProfile(Request $request, $id)
     {
-        $loggedInUser = $request->Session()->get('user');
-        # get current user details
-        $current_user = UserAccount::where('email', $loggedInUser)->first();
-        if ($current_user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $UserId = $id;
                 $user = NationalPresident::where('id', $UserId)->first();
                 //$All_post = Post::orderBy('id', 'DESC',)->where(['userId' => $user->id])->paginate(4);
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $current_user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('/ViewNationalPresidentProfile')->with([
-                    'user' => $current_user,
+                    'user' => $this->currentUser($request),
                     'UserId' => $user,
                     'unreadMessage' => $unreadMessage,
                 ]);
@@ -1401,18 +1405,16 @@ class UserController extends Controller
 
     public function ViewChapterPresidentProfile(Request $request, $id)
     {
-        $loggedInUser = $request->Session()->get('user');
-        # get current user
-        $current_user = UserAccount::where('email', $loggedInUser)->first();
-        if ($current_user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $UserId = $id;
                 $user = ChapterPresident::where('id', $UserId)->first();
                 // $All_post = Post::orderBy('id', 'DESC',)->where(['userId' => $user->id])->paginate(4);
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $current_user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('ViewChapterPresidentProfile')->with([
-                    'user' => $current_user,
+                    'user' => $this->currentUser($request),
                     'UserId' => $user,
                     'unreadMessage' => $unreadMessage,
                 ]);
@@ -1435,13 +1437,11 @@ class UserController extends Controller
     public function map(Request $request)
     {
         try {
-            $loggedInUser = $request->session()->get('user');
-            $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-            //get new messages
-            $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
-            if ($verifyUser) {
+
+            $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
+            if ($this->getAuth($request)) {
                 return view::make('map')->with([
-                    'verifyUser' => $verifyUser,
+                    'verifyUser' => $this->currentUser($request),
                     'unreadMessage' => $unreadMessage,
                 ]);
             } else {
@@ -1463,13 +1463,12 @@ class UserController extends Controller
     public function developer(Request $request)
     {
         try {
-            $loggedInUser = $request->session()->get('user');
-            $verifyUser = UserAccount::where('email', $loggedInUser)->first();
+
             //get new messages
-            $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
-            if ($verifyUser) {
+            $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
+            if ($this->getAuth($request)) {
                 return view::make('developer')->with([
-                    'verifyUser' => $verifyUser,
+                    'verifyUser' => $this->currentUser($request),
                     'unreadMessage' => $unreadMessage,
                 ]);
             } else {
@@ -1487,19 +1486,19 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
     public function ViewMissAsuProfile(Request $request, $id)
     {
-        $loggedInUser = $request->Session()->get('user');
-        $current_user = UserAccount::where('email', $loggedInUser)->first();
-        if ($current_user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $UserId = $id;
                 #set all the comment accordingly
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $current_user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 $user = MissAsu::where('id', $UserId)->first();
                 return view::make('/ViewMissAsuProfile')->with([
-                    'user' => $current_user,
+                    'user' => $this->currentUser($request),
                     'UserId' => $user,
                     'unreadMessage' => $unreadMessage,
 
@@ -1521,16 +1520,15 @@ class UserController extends Controller
 
     public function ViewSPortsProfile(Request $request, $id)
     {
-        $loggedInUser = $request->Session()->get('user');
-        $current_user = UserAccount::where('email', $loggedInUser)->first();
-        if ($current_user) {
+
+        if ($this->getAuth($request)) {
             try {
                 $UserId = $id;
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $current_user->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 $user = Sports::where('id', $UserId)->first();
                 return view::make('ViewSPortsProfile')->with([
-                    'user' => $current_user,
+                    'user' => $this->currentUser($request),
                     'UserId' => $user,
                     'unreadMessage' => $unreadMessage,
                 ]);
@@ -1551,9 +1549,8 @@ class UserController extends Controller
 
     public function commentPage(Request $request, $id)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
                 $postId = $id;
                 //check the exact post
@@ -1561,12 +1558,12 @@ class UserController extends Controller
                 //get the exact comment
                 $comments = Comment::where('postId', $id)->orderBy('created_at', 'desc')->paginate(4);
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 if ($checkPost) {
                     return view::make('commentPage')->with([
                         'checkPost' => $checkPost,
-                        'verifyUser' => $verifyUser,
-                        'comments'  => $comments,
+                        'verifyUser' => $this->currentUser($request),
+                        'comments' => $comments,
                         'unreadMessage' => $unreadMessage,
                     ]);
                 } else {
@@ -1640,19 +1637,18 @@ class UserController extends Controller
      */
     public function inbox(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
-                $getMessageForUser = Message::where('to_who', $verifyUser->username)->orderBy('created_at', 'desc')->paginate(4);
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $getMessageForUser = Message::where('to_who', $this->currentUser($request)->username)->orderBy('created_at', 'desc')->paginate(4);
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('inbox')->with([
-                    'verifyUser' => $verifyUser,
+                    'verifyUser' => $this->currentUser($request),
                     'getMessageForUser' => $getMessageForUser,
                     'unreadMessage' => $unreadMessage,
-                    'unreadMessage' => $unreadMessage
+
                 ]);
             } catch (\Exception $ex) {
                 $notification = array(
@@ -1669,19 +1665,19 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
     public function onlineUsers(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
 
-                $userDatas = UserAccount::get()->except($verifyUser->username);
+                $userDatas = UserAccount::get()->except($this->currentUser($request)->username);
                 // get message notification in navbar
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('onlineUsers')->with([
                     'userDatas' => $userDatas,
-                    'verifyUser' => $verifyUser,
+                    'verifyUser' => $this->currentUser($request),
                     'unreadMessage' => $unreadMessage,
                 ]);
             } catch (\Exception $ex) {
@@ -1699,22 +1695,22 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
     public function startChatting(Request $request, $id)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
-                $getMessageForUsers = Message::where('to_who', $verifyUser->username)->where('from_who', $id)->OrWhere('from_who', $verifyUser->username)->where('to_who', $id)->orderBy('created_at', 'asc')->paginate(6);
+                $getMessageForUsers = Message::where('to_who', $this->currentUser($request)->username)->where('from_who', $id)->OrWhere('from_who', $this->currentUser($request)->username)->where('to_who', $id)->orderBy('created_at', 'asc')->paginate(6);
                 // fetch current user
                 $fetchUserdata = UserAccount::where('username', $id)->first();
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 Message::where('from_who', $id)->update([
                     'status' => 'read'
                 ]);
                 return view::make('startChatting')->with([
                     //'userDatas' => $userDatas,
-                    'verifyUser' => $verifyUser,
+                    'verifyUser' => $this->currentUser($request),
                     'fetchUserdata' => $fetchUserdata,
                     'getMessageForUsers' => $getMessageForUsers,
                     'unreadMessage' => $unreadMessage,
@@ -1737,15 +1733,14 @@ class UserController extends Controller
 
     public function searchRequest(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
 
                 $userRequest = $request->question;
                 $SearchResult = UserAccount::where('username', 'Like', '%' . $userRequest . '%');
                 $searches = $SearchResult->orderBy('id', 'DESC')->paginate(10);
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('searchUsers')->with([
                     'searches' => $searches,
                     'unreadMessage' => $unreadMessage,
@@ -1809,14 +1804,13 @@ class UserController extends Controller
     {
 
         # logged in user
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
                 #set all the comment accordingly
                 $fetchPost = Post::where('id', $id)->get();
                 # get user data
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('editPost')->with([
                     'verifyUser' => $verifyUser,
                     'All_post' => $fetchPost,
@@ -1836,9 +1830,8 @@ class UserController extends Controller
 
     public function updatePosting(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
                 $rules = [
                     'postId',
@@ -1903,16 +1896,15 @@ class UserController extends Controller
     public function editCommentToPost(Request $request, $id)
     {
         # logged in user
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
             try {
                 $toComment = Comment::where('id', $id)->first();
                 //get new messages
-                $unreadMessage = Message::where('status', 'unread')->where('to_who', $verifyUser->username)->count();
+                $unreadMessage = Message::where('status', 'unread')->where('to_who', $this->currentUser($request)->username)->count();
                 return view::make('editCommentToPost')->with([
                     'toComment' => $toComment,
-                    'verifyUser' => $verifyUser,
+                    'verifyUser' => $this->currentUser($request),
                     'unreadMessage' => $unreadMessage,
                 ]);
             } catch (\Exception $ex) {
@@ -1930,11 +1922,12 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
     public function updateCommentToPost(Request $request)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+
+        if ($this->getAuth($request)) {
             $rules = [
                 'commentid',
                 'comment',
@@ -1970,9 +1963,8 @@ class UserController extends Controller
 
     public function deleteCommentToPost(Request $request, $id)
     {
-        $loggedInUser = $request->session()->get('user');
-        $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-        if ($verifyUser) {
+
+        if ($this->getAuth($request)) {
 
             $commentToDelete = $id;
             try {
@@ -1994,7 +1986,6 @@ class UserController extends Controller
     }
 
 
-
     public function historyOfAyedun(Request $request)
     {
         try {
@@ -2004,6 +1995,7 @@ class UserController extends Controller
             return redirect()->back()->to('/');
         }
     }
+
     public function deleteMyMessage(Request $request, $id)
     {
         try {
@@ -2021,17 +2013,19 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
     // This Rednders Reset Password Page
     public function resetPasswordPage(Request $request)
     {
         return view::make('resetPassword');
     }
+
     // Reset the Password User Provides
     public function resetPassword(Request $request)
     {
 
         // st the rules
-        $rules  = [
+        $rules = [
             'email' => 'required|',
             'security_question' => 'required|',
             'answers' => 'required|'
@@ -2075,7 +2069,7 @@ class UserController extends Controller
     public function updatePassword(Request $request)
     {
         // st the rules
-        $rules  = [
+        $rules = [
             'email' => 'required|',
             'password' => 'required|'
         ];
@@ -2104,11 +2098,10 @@ class UserController extends Controller
     public function ClearCahts(Request $request)
     {
         try {
-            $loggedInUser = $request->session()->get('user');
-            $verifyUser = UserAccount::where('email', $loggedInUser)->first();
-            if ($verifyUser){
 
-                Message::where('to_who', $verifyUser->username)->orWhere('from_who', $verifyUser->username) ->delete();
+            if ($this->getAuth($request)) {
+
+                Message::where('to_who', $this->currentUser($request)->username)->orWhere('from_who', $this->currentUser($request)->username)->delete();
                 $notification = array(
                     'message' => 'Chats Cleared Successfully!',
                     'alert-type' => 'success'
@@ -2116,7 +2109,6 @@ class UserController extends Controller
                 return redirect()->back()->with($notification);
             }
         } catch (\Exception $ex) {
-            dd($ex);
             $notification = array(
                 'message' => 'Error occured while trying to clear your chats please Try Again Latter!',
                 'alert-type' => 'error'
@@ -2124,4 +2116,115 @@ class UserController extends Controller
             return redirect()->back()->with($notification);
         }
     }
+
+    public function MissAsuApplication(Request $request)
+    {
+
+        if ($this->getAuth($request)) {
+
+            $validator = Validator::make($this->getValidDataMissAsu($request), $this->getValidateMissAsuRules($request));
+            if ($validator->fails()) {
+                return redirect()->back()->withInput()->withErrors($validator);
+            } else {
+                $data = $this->getValidDataMissAsu($request);
+
+//                                dd($data);
+                # validation rules
+                $this->MissAssuAppRepository->create($data);
+                $notification = array(
+                    'message' => 'Application submitted Successfully!',
+                    'alert-type' => 'success'
+                );
+                return redirect()->back()->with($notification);
+            }
+
+        }
+        $notification = array(
+        'message' => 'Permission Denied!',
+        'alert-type' => 'success'
+    );
+        return redirect()->back()->with($notification);
+    }
+
+    public function ChangeMissAsuAppDp(Request $request)
+    {
+        $request->validate = ([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+        $imageName = time() . "_" . $request->image->getClientOriginalName();
+//        dd($imageName);
+        $request->image->move(public_path('images'), $imageName);
+        $id = $request->id_number;
+//        dd($id);
+        //get current session
+        if ($this->getAuth($request)) {
+            try {
+                $ToDelete = MissAyedunApplication::find($id);
+//                dd($ToDelete);
+                MissAyedunApplication::where('id', $id)->update([
+                    'picture' => 'public/images/' . $imageName
+                ]);
+                if (!empty($ToDelete->picture)) {
+                    unlink($ToDelete->picture);
+                }
+                $notification = array(
+                    'message' => 'Display picture uploaded successfully',
+                    'alert-type' => 'success'
+                );
+                return redirect()->back()->with($notification);
+            } catch (\Exception $ex) {
+                $notification = array(
+                    'message' => 'Unable to upload this file',
+                    'alert-type' => 'error'
+                );
+                return redirect()->back()->with($notification);
+            }
+        }
+    }
+    public function vote()
+    {
+        $miss_assu_candidate = MissAyedunApplication::orderBy('fullname','desc')->paginate(8);
+        return view::make('vote.vote')->with([
+            'miss_assu_candidate' => $miss_assu_candidate,
+        ]);
+//        return  view("Vote::index")->compack($nationalExec);
+    }
+
+    public function getCastVote(Request $request)
+    {
+        $users = $this->userRepository->getModel();
+        $MiisAsu = MissAyedunApplication::orderBy('id','desc')->paginate(8);
+        return view::make('vote.castVote')->with([
+            'MissAsu' => $MiisAsu,
+            'user' => $users,
+        ]);
+    }
+
+    public function voters_reg(Request $request)
+    {
+        $rules = [
+            'voter_first_name'=> 'required',
+            'voter_last_name'=> 'required',
+//            'voter_email'=> 'required"|email|unique:vote',
+            'phone'=> 'required',
+        ];
+        dd($rules);
+
+        $validator = Validator::make($request->all(), $rules);
+        dd($validator);
+        if ($validator->fails()) {
+            return redirect()->back()->withInput()->withErrors($validator);
+        } else {
+            $this->data['data'] = $request->all();
+            dd($this->data['data']);
+            $vote = Vote::create([
+                'voter_first_name' => $this->data['first_name'],
+                'voter_last_name' => $this->data['last_name'],
+                'voter_email' => $this->data['email'],
+                'phone' => $this->data['phone'],
+
+            ]);
+        }
+    }
+
 }

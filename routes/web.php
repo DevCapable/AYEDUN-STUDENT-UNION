@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ImageUploadController;
 /*
@@ -35,8 +37,6 @@ Route::group(['guest' => 'guest'], function () {
         Route::get('/registerationGuest', [App\Http\Controllers\UserController::class, 'registerAsGuestPage']);
 
 
-
-
         Route::post('/login', [App\Http\Controllers\LoginController::class, 'login']);
         // render executive data
         Route::get('/', [App\Http\Controllers\UserController::class, 'executive']);
@@ -44,6 +44,31 @@ Route::group(['guest' => 'guest'], function () {
         Route::post('/', [App\Http\Controllers\UserController::class, 'clientMessage']);
         // HISTORY OF AYEDUN
         Route::get('/historyOfAyedun', [App\Http\Controllers\UserController::class, 'historyOfAyedun']);
+
+//    Route::get('/castVote',[UserController::class,'getCastVote']);
+// to get vote
+    Route::get('/vote', [App\Http\Controllers\UserController::class, 'vote']);
+
+//    Route::any('/payment', [App\Http\Controllers\PaymentController::class, 'payment']);
+//    Route::any('/verifyPayment',[App\Http\Controllers\PaymentController::class,'verifyPayment'])->name('verifyPayment');
+
+// PAY STACK
+    // Laravel 5.1.17 and above
+    Route::post('/pay', [App\Http\Controllers\PaymentController::class,'redirectToGateway'])->name('pay');
+    // Laravel 8
+//    Route::post('/pay', [App\Http\Controllers\PaymentController::class, 'redirectToGateway'])->name('pay');
+    Route::get('/payment/callback', [App\Http\Controllers\PaymentController::class, 'handleGatewayCallback']);
+
+
+    Route::post('voter/voters_reg', [App\Http\Controllers\VoteController::class, 'voters_reg'])->name('voters_reg');
+    // Voter start session
+    Route::post('voter/start_session', [App\Http\Controllers\VoteController::class, 'voterStartSession'])->name('voterStartSession');
+
+    // cast vote
+    Route::post('/castVote', [App\Http\Controllers\VoteController::class, 'castVote'])->name('castVote');
+
+
+
 });
 
 
@@ -51,7 +76,7 @@ Route::group(['authorized user' => 'authorized user'], function () {
 
         Route::view('user/imageUpload', 'imageUpload');
         # user home page
-        Route::get('user/home', [App\Http\Controllers\UserController::class, 'home']);
+        Route::get('user/home', [App\Http\Controllers\UserController::class, 'home'])->name('home');
         # t pass data through page
         #Route::get('user/all_users/{id}', [App\Http\Controllers\UserController::class, 'userPage']);
 
@@ -138,28 +163,28 @@ Route::group(['authorized user' => 'authorized user'], function () {
         Route::get('/user/ViewAllCompound', [App\Http\Controllers\UserController::class, 'ViewAllCompound']);
         # View COMPOUND HISTORY
         Route::get('user/ViewCompoundHistory/{id}', [App\Http\Controllers\UserController::class, 'ViewCompoundHistory']);
-        
+
         // View all Relative
         Route::get('/user/ViewAllRelative', [App\Http\Controllers\UserController::class, 'ViewAllRelative']);
 
         // View all all national Executive
         Route::get('/user/ViewAllNationalExecutive', [App\Http\Controllers\UserController::class, 'ViewAllNationalExecutive']);
 
-        # View  user profile for national eXecutive 
+        # View  user profile for national eXecutive
         Route::get('user/ViewNationalExecutiveProfile/{id}', [App\Http\Controllers\UserController::class, 'ViewNationalExecutiveProfile']);
 
-        # View  user profile for national eXecutive 
+        # View  user profile for national eXecutive
         Route::get('user/ViewAllMissAsu', [App\Http\Controllers\UserController::class, 'ViewAllMissAsu']);
 
-        # View  user profile for national President 
+        # View  user profile for national President
         Route::get('user/ViewNationalPresidentProfile/{id}', [App\Http\Controllers\UserController::class, 'ViewNationalPresidentProfile']);
-        # View  user profile for Chapter President 
+        # View  user profile for Chapter President
         Route::get('user/ViewChapterPresidentProfile/{id}', [App\Http\Controllers\UserController::class, 'ViewChapterPresidentProfile']);
 
-        # View  user profile for Sport Directors 
+        # View  user profile for Sport Directors
         Route::get('user/ViewSPortsProfile/{id}', [App\Http\Controllers\UserController::class, 'ViewSPortsProfile']);
 
-        # View  user profile for Miss ASU Directors 
+        # View  user profile for Miss ASU Directors
         Route::get('user/ViewMissAsuProfile/{id}', [App\Http\Controllers\UserController::class, 'ViewMissAsuProfile']);
         # View MAP PAGE
         Route::get('user/map', [App\Http\Controllers\UserController::class, 'map']);
@@ -198,19 +223,19 @@ Route::group(['authorized user' => 'authorized user'], function () {
         // get search request Chapter president
         Route::get('user/searchChapterPresident', [App\Http\Controllers\UserController::class, 'ViewAllChapterPresident']);
 
-        // get search request National executive 
+        // get search request National executive
         Route::post('user/searchNationalExecutive', [App\Http\Controllers\UserController::class, 'ViewAllNationalExecutive']);
-        // get searchrequest National executive 
+        // get searchrequest National executive
         Route::get('user/searchNationalExecutive', [App\Http\Controllers\UserController::class, 'ViewAllNationalExecutive']);
 
-        // get search request MISS ASU 
+        // get search request MISS ASU
         Route::post('user/searchMissAsu', [App\Http\Controllers\UserController::class, 'ViewAllMissAsu']);
-        // get searchrequest MISS ASU 
+        // get searchrequest MISS ASU
         Route::get('user/searchMissAsu', [App\Http\Controllers\UserController::class, 'ViewAllMissAsu']);
 
-        // get search request Sport Director 
+        // get search request Sport Director
         Route::post('user/searchSportDirector', [App\Http\Controllers\UserController::class, 'ViewAllSportDirector']);
-        // get searchrequest Sport Director 
+        // get searchrequest Sport Director
         Route::get('user/searchSportDirector', [App\Http\Controllers\UserController::class, 'ViewAllSportDirector']);
 
         // Delete My Message
@@ -224,8 +249,21 @@ Route::group(['authorized user' => 'authorized user'], function () {
         // reset Password Page
         Route::get('user/resetPassword', [App\Http\Controllers\UserController::class, 'resetPasswordPage']);
 
-           // reset Update Password 
+           // reset Update Password
          Route::post('user/updatePassword', [App\Http\Controllers\UserController::class, 'updatePassword']);
+         // MISS ASU APPLICATION
+    Route::post('user/MissAsuApplication', [App\Http\Controllers\UserController::class, 'MissAsuApplication'])->name('applyMissAsu');
+   // Change ur miss asu dp
+    Route::post('user/MissAsuApplicationDp', [App\Http\Controllers\UserController::class, 'ChangeMissAsuAppDp'])->name('changeMissAsuAppDp');
+
+    Route::get('meeting/{id}', [App\Http\Controllers\UserController::class, 'getAspirant']);
+//    Route::get('meetingss/{id}', [App\Http\Controllers\UserController::class, 'getAspirant']);
+
+//    Route::get('meetingss/{$id}',[UserController::class,'payment']);
+
+    // Change ur miss asu dp
+//    Route::post('vote/{$id}', [App\Modules\vote\Http\Controllers\VoteController::class, 'getAspirant'])->name('getAspirant');
+
 });
 
 
@@ -257,7 +295,7 @@ Route::group(['administrator' => 'administrator'], function () {
                 // PUBLICATION VIDEO
                 Route::post('administrator/videoPublication', [App\Http\Controllers\adminController::class, 'videoPublication']);
 
-                // MANAGE ALL PUBLICATION 
+                // MANAGE ALL PUBLICATION
                 Route::get('administrator/manageAllPublictions', [App\Http\Controllers\adminController::class, 'ManagePublications']);
                 // EDIT PUBLICATION
                 Route::get('administrator/editPublication/{id}', [App\Http\Controllers\adminController::class, 'editPublication']);
@@ -290,9 +328,9 @@ Route::group(['administrator' => 'administrator'], function () {
                  // Delete Message
                  Route::get('administrator/deletemessage/{id}', [App\Http\Controllers\adminController::class, 'deleteMessage']);
                 // send Warning signal
-                Route::get('administrator/sendWaring/{id}',[App\Http\Controllers\adminController::class, 'SendSignal']); 
+                Route::get('administrator/sendWaring/{id}',[App\Http\Controllers\adminController::class, 'SendSignal']);
                 // send Warning signal
-                Route::get('administrator/readSentMail/{id}',[App\Http\Controllers\adminController::class, 'readSentMail']);  
+                Route::get('administrator/readSentMail/{id}',[App\Http\Controllers\adminController::class, 'readSentMail']);
                 // send mail to single user
                  Route::get('administrator/send-mail',[App\Http\Controllers\adminController::class, 'sendMail'])->name(('send-mail'));
 
@@ -305,13 +343,13 @@ Route::group(['administrator' => 'administrator'], function () {
                   Route::post('administrator/send-mail-to-all-users',[App\Http\Controllers\AdminSendMail::class, 'sendMailToAllUsers'])->name(('send-mail-to-all-users'));
                  //send mail
                  Route::post('administrator/send-mail',[App\Http\Controllers\AdminSendMail::class, 'sendMail'])->name('new-mail');
-                
+
                 # admin log out
                 Route::post('admin/logout', [App\Http\Controllers\adminController::class, 'logout']);
         });
         Route::group(['Compound' => 'Compound'], function () {
 
-                # supplies admin all available  compound 
+                # supplies admin all available  compound
                 Route::get('administrator/Manage_Compounds', [App\Http\Controllers\adminController::class, 'Manage_Compounds']);
                 #create Compound
                 Route::post('administrator/Manage_Compounds', [App\Http\Controllers\adminController::class, 'Create_Compound']);
@@ -326,7 +364,7 @@ Route::group(['administrator' => 'administrator'], function () {
         });
         Route::group(['Sports' => 'Sports'], function () {
 
-                # renders all sports directors 
+                # renders all sports directors
                 Route::get('administrator/Manage_Sports', [App\Http\Controllers\adminController::class, 'Manage_Sports']);
                 #create Sport
                 Route::post('administrator/Manage_Sports', [App\Http\Controllers\adminController::class, 'Create_Sport']);
@@ -339,14 +377,14 @@ Route::group(['administrator' => 'administrator'], function () {
                 #Change Profile dp
                 Route::post('/administrator/ChangeSportDp', [App\Http\Controllers\adminController::class, 'ChangeSportDp'])->name('image.upload.post');
 
-               
+
         });
 
 
 
 
         Route::group(['MISS ASU' => 'MISS ASU'], function () {
-                # renders all sports directors 
+                # renders all sports directors
                 Route::get('administrator/Manage_MissAsu', [App\Http\Controllers\adminController::class, 'Manage_MissAsu']);
                 #create MISSASU
                 Route::post('administrator/Manage_MissAsu', [App\Http\Controllers\adminController::class, 'Create_MissAsu']);
@@ -363,7 +401,7 @@ Route::group(['administrator' => 'administrator'], function () {
         });
 
         Route::group(['NATIONAL_PRESIDENT' => 'NATIONAL_PRESIDENT'], function () {
-                # renders all NATIONAL PRESIDENT PAGE 
+                # renders all NATIONAL PRESIDENT PAGE
                 Route::get('administrator/Manage_National_President', [App\Http\Controllers\adminController::class, 'Manage_National_President']);
                 #create NATIONAL PRESIDENT
                 Route::post('administrator/Manage_National_President', [App\Http\Controllers\adminController::class, 'Create_National_President']);
@@ -379,7 +417,7 @@ Route::group(['administrator' => 'administrator'], function () {
         });
 
         Route::group(['NATIONAL_EXECUTIVE' => 'NATIONAL_EXECUTIVE'], function () {
-                # renders all NATIONAL PRESIDENT PAGE 
+                # renders all NATIONAL PRESIDENT PAGE
                 Route::get('administrator/NationalExecutive', [App\Http\Controllers\adminController::class, 'Manage_National_Executive']);
                 #create NATIONAL Executive
                 Route::post('administrator/NationalExecutive', [App\Http\Controllers\adminController::class, 'Create_National_Executive']);
@@ -395,7 +433,7 @@ Route::group(['administrator' => 'administrator'], function () {
         });
 
         Route::group(['CHAPTER_PRESIDENT' => 'CHAPTER_PRESIDENT'], function () {
-                # renders all Chapter PRESIDENT PAGE 
+                # renders all Chapter PRESIDENT PAGE
                 Route::get('administrator/Manage_Chapter_President', [App\Http\Controllers\adminController::class, 'Manage_Chapter_President']);
                 #create Chapter PRESIDENT
                 Route::post('administrator/Manage_Chapter_President', [App\Http\Controllers\adminController::class, 'Create_Chapter_President']);
@@ -412,7 +450,7 @@ Route::group(['administrator' => 'administrator'], function () {
         });
 
 
-        # renders all Chapter inbox PAGE 
+        # renders all Chapter inbox PAGE
         Route::get('administrator/Inbox', [App\Http\Controllers\adminController::class, 'Inbox']);
         Route::get('administrator/ReadMessage{id}', [App\Http\Controllers\adminController::class, 'ReadMessage']);
 });

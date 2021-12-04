@@ -88,29 +88,39 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-6">
-                @if (Session::has('user'))
-                    <div class="alert alert-success" style="margin-right:200px">
-                        Online
-                    </div>
-                @endif
+
             </div>
             <div class="col-sm-6">
 
-                <form method="POST" action="{{ url('user/image-upload') }}" id="logout" novalidate>
-                    <button style=" float: right;" type="submit" class="btn btn-sm btn-primary"> <a
-                            style="color: white; text-decoration:none" href="/user/image-upload"> Upload Profile
-                            Picture</a></button>
-                </form>
-                
-                
+
+                @if( $user->gender === 'Female'&& $MissAsuApp === null)
+                    <h5 class="alert alert-success">Important information Please note that you can not apply twice and make sure you proofread before hitting on submit button.</h5>
+
+                    <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Apply for MISS ASU</button>
+
+                @elseif($MissAsuApp !==null && ($MissAsuApp->picture ===null))
+                    <h5 class="alert alert-success">Congratulations, you have successfully applied for {{date('Y')}} MISS ASU please proceed to the next stage</h5>
+                    <h5 style="color: red"> <i class="fa fa-arrow-alt-circle-right"></i> Upload your display picture to complete your application</h5>
+                    <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Upload here</button>
+                @elseif($MissAsuApp !==null && ($MissAsuApp->picture !==null))
+                    <h5 class="alert alert-success">You can preview your application right here <a href="">Miss asu</a></h5>
+                    <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Apply for MISS ASU</button>
+                @endif
+
+
+
             </div>
         </div>
         <div class="row mt-12">
             <div class="col-md-12 offset-col-md-4">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">WELCOME TO HOME</h4>
-
+                        <h4 class="card-title">WELCOME</h4>
+                        <form method="POST" action="{{ url('user/image-upload') }}" id="logout" novalidate>
+                            <button style=" float: right;" type="submit" class="btn btn-sm btn-primary"> <a
+                                    style="color: white; text-decoration:none" href="/user/image-upload"> Upload Profile
+                                    Picture</a></button>
+                        </form>
                     </div>
                     <div class="card-body">
                         <!--NOTIFICATION STARTS HERE-->
@@ -133,7 +143,7 @@
                                 <strong>Whoops!</strong> There were some problems with your input.
                                 <ul>
                                     @foreach ($errors->all() as $error)
-                                        <li><span style="color: red">{{ $error }}</span></li>
+                                        <li style="height: fit-content"><span style="color: red">{{ $error }}</span></li>
                                     @endforeach
                                 </ul>
                             </div>
@@ -145,7 +155,7 @@
                                     <div class="container">
                                         <div class="row">
                                             <div class="col-md-8 col-md-offset-2">
-                                              
+
                                                 <div class="blog-item">
                                                     <div class="date"> <span style="float: left"
                                                             class="badge badge-info pull-right">You Are Active just
@@ -154,10 +164,10 @@
                                                     <div class="down-content">
                                                         <img src="{{ asset($user->picture) }}" class="img-thumbnail"
                                                             width="75" />
-                                                                                                  
-                                                            
+
+
                                                         <div class="row">
-                                                               
+
                                                             <details>
                                                                 <summary style="background-color:red; color:#fff;">
                                                                     ...See <i class="fa fa-eye"></i> You
@@ -302,6 +312,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                </section>
                             </div>
                             <div class="col-sm-6">
                                 <div class="tab">
@@ -391,7 +402,7 @@
                 </div>
             </div>
         </div>
-      
+
         <div class="row">
             <!--SEARCH HERE-->
             @include('searchUsers')
@@ -481,7 +492,7 @@
                                                     <span>{{ $item->likes->count() }}</span>
                                                 </a>
                                             @endif
-                                            
+
                                             <a title="Click to comment"
                                                 href="{{ url('user/commentPage/' . $item->id) }}"
                                                 class="btn btn-outline-info btn-sm pull-left">
@@ -495,13 +506,13 @@
                                                 $kounter = $kounter+1;
                                                  @endphp
                                                 @endif
-                                                
-                                                @endforeach 
+
+                                                @endforeach
                                                 @php
                                                 $kounter +1;
                                             @endphp
-                                                <span>{{ $kounter }}</span>                                                   
-                                                
+                                                <span>{{ $kounter }}</span>
+
                                             </a>
                                             <a href="{{ url('user/view_user_profile/' . $item->userId) }}"
                                                 class="btn btn-outline-primary btn-sm pull-right">
@@ -527,12 +538,13 @@
         <!-- ============================================================== -->
     </div>
 
-    </div>
+
     <!-- ============================================================== -->
     <!-- End Container fluid  -->
     <!-- ============================================================== -->
 
-    </div>
+    @include('missAyedunApplicationForm')
+
     @include('layouts.footer')
     @include('layouts.scripts')
     <script>

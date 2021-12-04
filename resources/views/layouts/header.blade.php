@@ -8,14 +8,14 @@
           class="fa fa-envelope"></i><span style="font-size: 20px;color: red">
             <i>  {{ $unreadMessage  }}</i></a>
           @endif
-          
-    
+
+
     &nbsp;
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
       aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    
+
 
     <div class="collapse navbar-collapse" id="navbarCollapse">
       <ul class="navbar-nav mr-auto">
@@ -28,7 +28,7 @@
             <i class="fa fa-tasks"></i>&nbsp;ASU Arena
           </a>
           <div class="dropdown-menu">
-            
+
 
             <a id="dropdown" class="dropdown-item" href="{{ url('user/ViewAllSportDirector') }}"><i class="fa fa-home"></i>&nbsp;ASU sport</a>
               <a id="dropdown" class="dropdown-item" href="{{ url('user/ViewAllNationalPresident') }}"><i class="fa fa-street-view"></i>&nbsp;ASU
@@ -37,7 +37,7 @@
                   Chapters</a>
                   <a id="dropdown" class="dropdown-item" href="{{ url('user/ViewAllNationalExecutive') }}"><i class="fa fa-user"></i>&nbsp;National Executives</a>
                   <a id="dropdown" class="dropdown-item" href="{{ url('user/ViewAllMissAsu') }}"><i class="fa fa-user"></i>&nbsp;MISS ASU</a>
-              
+
                 </div>
         </li>
         <!-- Dropdown -->
@@ -56,28 +56,28 @@
           </div>
 
         </li>
-        <a  class="btn btn-outline-info" class="nav-link" href="{{ url('user/inbox') }}" class="active"><i
+        <a   class="nav-link" href="{{ url('user/inbox') }}" class="active"><i
                     class="fa fa-envelope"></i><span style="font-size: 20px;color: red">
                     @if ($unreadMessage>1)
                       <i> {{ $unreadMessage .'New Messages' }}</i>
                     @else
-                    {{ $unreadMessage }} 
+                    {{ $unreadMessage }}
                     @endif
                      </span> Message<span class="sr-only">(current)</span></a>
-              
+
               &nbsp;
         <form method="POST" action="{{ url('user/logout') }}" id="logout" novalidate>
           @csrf
           <button style=" float: right;" type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sign-out-alt"></i>Sign Out </button>
       </form>
       </ul>
-      <div>
-        @include('searchUsers')
-      </div>
+        @if (Session::has('user'))
+            <h5 class="alert alert-success" style="margin-right:200px">
+                Online
+            </h5>
+        @endif
     </div>
-    </div>
-    </li> 
-   
+
   </nav>
 </header>
 <br>

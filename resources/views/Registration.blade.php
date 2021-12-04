@@ -72,12 +72,12 @@
                             @csrf
                             <div class="row">
                                 <div class="col-sm-6">
-                                    <div class="form-group {{ $errors->has('ID_NUMBER') ? 'has-error' : '' }}">
-                                        <label for="fullname">ID Number</label>
-                                        <input type="text" name="ID_NUMBER" id="ID_NUMBER" class="form-control"
+                                    <div class="form-group {{ $errors->has('id_number') ? 'has-error' : '' }}">
+                                        <label for="id_number">ID Number</label>
+                                        <input type="text" name="id_number" id="id_number" class="form-control"
                                             value="{{ 'ASU'.Time().'@40'}}" readonly>
-                                        @if ($errors->has('ID_NUMBER'))
-                                        <span class="font-weight-bold">{{ $errors->first('ID_NUMBER') }}</span>
+                                        @if ($errors->has('id_number'))
+                                        <span class="font-weight-bold">{{ $errors->first('id_number') }}</span>
                                         @endif
                                     </div>
                                     <div class="form-group {{ $errors->has('fullname') ? 'has-error' : '' }}">
@@ -439,21 +439,21 @@
         password1 = form.password1.value;
         password = form.password.value;
 
-        // If password not entered 
+        // If password not entered
         if (password1 == '')
             alert("Please enter Password");
 
-        // If confirm password not entered 
+        // If confirm password not entered
         else if (password == '')
             alert("Please enter confirm password");
 
-        // If Not same return False.     
+        // If Not same return False.
         else if (password1 != password) {
             alert("\nPassword did not match: Please try again...")
             return false;
         }
 
-        // If same return True. 
+        // If same return True.
         else {
             alert("Password Match: Please keep it safe!")
             return true;

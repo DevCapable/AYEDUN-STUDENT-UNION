@@ -1,15 +1,16 @@
 <link rel="icon" href="../../../../favicon.ico">
 <!-- Bootstrap core CSS -->
+<link href="https://fonts.googleapis.com/css?family=Poppins:100,200,300,400,500,600,700,800,900" rel="stylesheet">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
 integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 <link rel="stylesheet" href="{{ asset('bootstrap/css/bootstrap.min.css') }}">
 <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css">
-<link rel="stylesheet" href="{{ asset('widgEditor/css/widgEditor.css') }}" />
+
 @livewireStyles
         <link rel="stylesheet"
             href="{{ mix('css/app.css') }}">
 <style>
-   
+
 
     #homename {
         font-family: Exotc350 Bd BT;
@@ -111,10 +112,10 @@ integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ
         list-style: none;
         color: #fff;
         margin: 0px;
-    
+
     }
-    
-    
+
+
     #twitterb, #facebookb, #linkedinb, #googleb {
         background-color:#205d7a;
         color: #fff;
@@ -126,7 +127,7 @@ integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ
         text-align: center;
         margin-right: 0px;
         padding-top: 15%;
-        transition: all 0.2s eas-in-out;       
+        transition: all 0.2s eas-in-out;
     }
     #googleb:hover , #twitterb:hover , #linkedinb:hover , #facebookb:hover {
         color: red; background-color: #33ff77;

@@ -5,23 +5,12 @@ namespace Cms\ServiceCompany\Repo\Eloquent;
 use App\Models\Compound;
 use App\Models\UserAccount;
 use App\Modules\Vote\Models\Vote;
-use Cms\ServiceCompany\Models\ServiceCompany;
-use Cms\Site\Models\User;
+
 use Illuminate\Support\Str;
 use Sentry;
-use Cms\ServiceCompany\Services\Forms\ServiceCompanyForm;
-use Cms\ServiceCompany\Services\Forms\ServiceCompanyAdminForm;
-use Cms\ServiceCompany\Services\Forms\ServiceCompanyAdminEditForm;
+
 use Illuminate\Database\Eloquent\Collection;
 use Cms\ServiceCompany\Repo\VoteRegistrationRepositoryInterface;
-use Cms\Site\Repo\Eloquent\AbstractRepository;
-use Redirect;
-use Cms\ServiceCompany\Models\Shareholder;
-use Cms\ServiceCompany\Models\QualityAssurance;
-use Cms\ServiceCompany\Models\Service;
-use Cms\ServiceCompany\Models\Material;
-use Cms\ServiceCompany\Models\Equipment;
-use Cms\ServiceCompany\Models\Facility;
 
 
 class VoteRegistrationRepository implements VoteRegistrationRepositoryInterface

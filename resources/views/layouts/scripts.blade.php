@@ -1,5 +1,8 @@
 <script src="{{ asset('/plugins/jquery/jquery.min.js') }}"></script>
 <!-- Bootstrap 4 -->
+<script src="{{ asset('vendor/jquery/jquery.min.js')}}"></script>
+<script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css">
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -30,6 +33,6 @@
         }
 
     </script>
-    
+
 @endif
 
